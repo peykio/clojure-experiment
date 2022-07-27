@@ -1,0 +1,40 @@
+{:paths
+ ["src/main" "src/resources"]
+
+ :mvn/repos
+ {"datomic-cloud" {:url "s3://datomic-releases-1fc2183a/maven/releases"}}
+
+ :deps
+ {org.clojure/clojure {:mvn/version "1.11.1"}
+  org.clojure/tools.analyzer {:mvn/version "1.1.0"}
+  com.yetanalytics/colossal-squuid {:mvn/version "0.1.4"}
+  ring/ring {:mvn/version "1.9.4"}
+  integrant/integrant {:mvn/version "0.8.0"}
+  metosin/reitit {:mvn/version "0.5.15"}
+  clj-http/clj-http {:mvn/version "3.12.3"}
+  ovotech/ring-jwt {:mvn/version "2.2.1"}
+  com.datomic/ion {:mvn/version "1.0.59"}
+  com.datomic/client-cloud {:mvn/version "1.0.120"}
+
+  ;; datomic cloud versions
+  org.clojure/tools.namespace {:mvn/version "1.2.0"}
+  com.fasterxml.jackson.core/jackson-core {:mvn/version "2.12.3"}
+  org.clojure/java.classpath {:mvn/version "1.0.0"}
+  com.google.guava/guava {:mvn/version "31.0.1-jre"}
+  org.checkerframework/checker-qual {:mvn/version "3.12.0"}
+  org.clojure/test.check {:mvn/version "1.1.1"}}
+
+ :aliases
+ {:dev
+  {:extra-paths ["src/dev"]
+   :extra-deps {com.datomic/dev-local {:mvn/version "0.9.235"}
+                integrant/repl {:mvn/version "0.3.2"}}}}
+
+ :test
+ {:extra-paths ["src/test"]
+  :extra-deps {com.datomic/dev-local {:mvn/version "0.9.235"}
+               ring/ring-mock {:mvn/version "0.4.0"}
+               integrant/repl {:mvn/version "0.3.2"}}}
+
+ :prod
+ {:extra-deps {}}}

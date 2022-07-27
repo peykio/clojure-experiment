@@ -1,0 +1,5 @@
+.cpcache
+.nrepl-port
+.clj-kondo/.cache
+.calva
+.datomic-ions

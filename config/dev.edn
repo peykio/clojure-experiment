@@ -1,0 +1,9 @@
+{:zaal.components.jetty/server {:handler #ig/ref :zaal.server/app
+                                :port 3000}
+ :zaal.server/app {:datomic #ig/ref :zaal.components.datomic-dev-local/db
+                   :auth0 #ig/ref :zaal.components.auth0/auth}
+ :zaal.components.auth0/auth {:client-secret "<YOUR_CLIENT_SECRET>"}
+ :zaal.components.datomic-dev-local/db {:server-type :dev-local
+                                        :system "zaal-dev"
+                                        :db-name "zaal-db"
+                                        :storage-dir :mem}}

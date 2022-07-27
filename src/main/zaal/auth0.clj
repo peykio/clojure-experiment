@@ -8,11 +8,11 @@
         :content-type :json
         :cookie-policy :standard
         :body (m/encode "application/json"
-                        {:client_id "0NLsiVfeEF2ZY0fstfzOk6K9AKZ1a5hP"
+                        {:client_id ""
                          :client_secret (:client-secret auth0)
-                         :audience "https://learn-reitit-playground.eu.auth0.com/api/v2/"
+                         :audience ""
                          :grant_type "client_credentials"})}
-       (http/post "https://learn-reitit-playground.eu.auth0.com/oauth/token")
+       (http/post "")
        (m/decode-response-body)
        :access_token))
 
@@ -23,7 +23,7 @@
         :throw-exceptions false
         :content-type :json
         :cookie-policy :standard}
-       (http/get "https://learn-reitit-playground.eu.auth0.com/api/v2/roles")
+       (http/get "")
        (m/decode-response-body)
        (filter (fn [role] (= (:name role) "manage-recipes")))
        (first)

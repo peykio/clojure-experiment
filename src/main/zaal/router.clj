@@ -29,14 +29,14 @@
 (defn router-config
   [env]
   {:validate rs/validate
-   :reitit.middleware/transform dev/print-request-diffs
+   ;:reitit.middleware/transform dev/print-request-diffs
    :exception pretty/exception
    :data {:env env
           :coercion coercion-spec/coercion
           :muuntaja m/instance
           :middleware [swagger/swagger-feature
                        muuntaja/format-middleware
-                       exception/exception-middleware
+                       ;exception/exception-middleware
                        coercion/coerce-request-middleware
                        coercion/coerce-response-middleware
                        mw/wrap-env]}})

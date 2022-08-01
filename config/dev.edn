@@ -1,10 +1,16 @@
 {:zaal.components.jetty/server {:handler #ig/ref :zaal.server/app :port 3000}
  :zaal.server/app {:datomic #ig/ref :zaal.components.datomic-dev-local/db
                    :auth0 #ig/ref :zaal.components.auth0/auth}
- :zaal.components.pedestal/server {:service-map {:io.pedestal.http/routes #ig/ref :zaal.pedestal/app
+ :zaal.components.pedestal/server {:service-map {:env :dev
+                                                 :io.pedestal.http/routes #ig/ref :zaal.pedestal/app
+                                                 :io.pedestal.http/resource-path "/public"
                                                  :io.pedestal.http/type :jetty
                                                  :io.pedestal.http/port 3001
-                                                 :io.pedestal.http/join? false}}
+                                                 :io.pedestal.http/join? false
+                                                  ;; all origins are allowed in dev mode
+                                                 :io.pedestal.http/dev-allowed-origins {:creds true :allowed-origins (constantly true)}
+                                                 ;; Content Security Policy (CSP) is mostly turned off in dev mode
+                                                 :io.pedestal.http/secure-headers  {:content-security-policy-settings {:object-src "'none'"}}}}
  :zaal.pedestal/app {:datomic #ig/ref :zaal.components.datomic-dev-local/db}
  :zaal.components.auth0/auth {:client-secret "<YOUR_CLIENT_SECRET>"}
  :zaal.components.datomic-dev-local/db {:server-type :dev-local

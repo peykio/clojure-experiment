@@ -7,7 +7,8 @@
 
 (defn routes [_]
   (route/expand-routes
-   #{["/greet" :get respond-hello :route-name :greet]}))
+   #{["/greet" :get respond-hello :route-name :greet]
+     ["/recipes" :get respond-hello :route-name :recipes]}))
 
 (defn app
   [config]

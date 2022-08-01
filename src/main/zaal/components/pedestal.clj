@@ -5,8 +5,11 @@
 (defmethod ig/init-key ::server
   [_ {:keys [service-map] :as _config}]
   (print (str "Pedestal Server starting..."))
-  (let [server (http/start
-                (http/create-server service-map))]
+  (let [server (-> service-map
+                   http/default-interceptors
+                   http/dev-interceptors
+                   http/create-server
+                   http/start)]
     (println (str "running on port " (get service-map :io.pedestal.http/port)))
     server))
 

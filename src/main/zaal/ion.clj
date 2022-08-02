@@ -1,14 +1,18 @@
 (ns zaal.ion
-  (:require [integrant.core :as ig]
-            [zaal.components.auth0 :as auth0]
-            [zaal.components.datomic-cloud :as datomic-cloud]
-            [datomic.ion :as ion]
-            [zaal.server :as server]))
+  (:require
+   [zaal.components.datomic-cloud :as datomic-cloud]
+   [zaal.components.pedestal-ion :as server]
+   [zaal.pedestal :as pedestal]
+   [io.pedestal.ions :as provider]
+   [io.pedestal.http :as http]
+   [integrant.core :as ig]))
 
-(def integrant-setup
-  {::server/app {:datomic (ig/ref ::datomic-cloud/db)
-                 :auth0 (ig/ref ::auth0/auth)}
-   ::auth0/auth {:client-secret (get (ion/get-params {:path "/datomic-shared/prod/zaal/"}) "auth0-client-secret")}
+(def system-map
+  {::server/server {:service-map {:env :prod
+                                  ::http/routes (ig/ref ::pedestal/app)
+                                  ::http/resource-path "/public"
+                                  ::http/chain-provider provider/ion-provider}}
+   ::pedestal/app {:datomic (ig/ref ::datomic-cloud/db)}
    ::datomic-cloud/db {:server-type :ion
                        :region "us-east-1"
                        :system "zaal-prod"
@@ -17,7 +21,7 @@
 
 (def app
   (delay
-   (-> integrant-setup ig/prep ig/init ::server/app)))
+   (-> system-map ig/prep ig/init ::server/server)))
 
 (defn handler
   [req]

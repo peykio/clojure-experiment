@@ -57,16 +57,13 @@
 (def graph
   {:name :graph
    :enter (fn [context]
-            (let [request (:request context)
-                  query (get-in request [:params :query])
-                  response (->> query (m/decode "application/edn"))]
-
-              (assoc context :response (ok (pathom/pathom response)))))})
+            (let [query (get-in context [:request :params])]
+              (assoc context :response (ok (pathom/pathom query)))))})
 
 (def pathom-format-interceptor-defaults
   (->
    m/default-options
-   (update :default-format (constantly "application/edn"))
+   (update :default-format (constantly "application/transit+json"))
    (assoc-in
     [:formats "application/transit+json" :decoder-opts]
     {:handlers pcot/read-handlers})
@@ -79,14 +76,7 @@
   (route/expand-routes
    #{["/greet" :get respond-hello :route-name :greet]
      ["/greet/:name" :post [(muuntaja/format-interceptor) (muuntaja/params-interceptor) echo] :route-name :greet-name]
-     ["/graph" :post [(muuntaja/format-interceptor) (muuntaja/params-interceptor) graph] :route-name :graph]
-     ["/graph2" :post [(body-params/body-params
-                        (body-params/default-parser-map :transit-options {:handlers pcot/read-handlers}))
-                       (http/transit-body-interceptor
-                        ::http/transit-json-body
-                        "application/transit+json"
-                        :json
-                        {:handlers pcot/write-handlers}) graph] :route-name :graph2]}))
+     ["/graph" :post [(muuntaja/format-interceptor (m/create pathom-format-interceptor-defaults)) (muuntaja/params-interceptor) graph] :route-name :graph]}))
 
 
 (defn app

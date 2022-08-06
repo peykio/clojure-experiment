@@ -8,7 +8,8 @@
                                                  :io.pedestal.http/dev-allowed-origins {:creds true :allowed-origins (constantly true)}
                                                  ;; Content Security Policy (CSP) is mostly turned off in dev mode
                                                  :io.pedestal.http/secure-headers  {:content-security-policy-settings {:object-src "'none'"}}}}
- :zaal.pedestal/app {:datomic #ig/ref :zaal.components.datomic-dev-local/db}
+ :zaal.pedestal/app {:pathom-env #ig/ref :zaal.pathom/env}
+ :zaal.pathom/env {:datomic #ig/ref :zaal.components.datomic-dev-local/db}
  :zaal.components.datomic-dev-local/db {:server-type :dev-local
                                         :system "zaal-dev"
                                         :db-name "zaal-db"

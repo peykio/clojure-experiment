@@ -9,6 +9,6 @@
       http/create-provider))
 
 (defmethod ig/init-key ::server
-  [_ {:keys [service-map] :as _config}]
+  [_ {:keys [service-map]}]
   (handler service-map))
 

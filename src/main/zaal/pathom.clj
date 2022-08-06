@@ -42,25 +42,27 @@
   {::pco/output
    [{:app/all-recipes
      [:recipe/recipe-id]}]}
-  {:app/all-recipes (d/q '[:find (pull ?e [:recipe/recipe-id])
-                           :where [?e :recipe/public? true]]
-                         (:db env))})
+  {:app/all-recipes (map first (d/q '[:find (pull ?e [:recipe/recipe-id])
+                                      :where [?e :recipe/public? true]]
+                                    (:db env)))})
 
-(pco/defresolver get-recipe [env {:recipe/keys [id]}]
+(pco/defresolver get-recipe [env {:recipe/keys [recipe-id]}]
   {::pco/output
    [:recipe/recipe-id
     :recipe/prep-time
     :recipe/display-name
     :recipe/image-url
     :recipe/public?]}
-  (d/q '[:find (pull ?e [:recipe/recipe-id
-                         :recipe/prep-time
-                         :recipe/display-name
-                         :recipe/image-url
-                         :recipe/public?])
-         :in $ id
-         :where [?e :recipe/recipe-id id]]
-       (:db env) id))
+
+  (-> (d/q '[:find (pull ?e [:recipe/recipe-id
+                             :recipe/prep-time
+                             :recipe/display-name
+                             :recipe/image-url
+                             :recipe/public?])
+             :in $ ?recipe-id
+             :where [?e :recipe/recipe-id ?recipe-id]]
+           (:db env) recipe-id)
+      ffirst))
 
 
 (defn env [{:keys [conn]}]

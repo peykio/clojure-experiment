@@ -33,6 +33,15 @@
          [?e :account/account-id ?v]]
        (d/db (:conn datomic)))
 
+  (-> (d/q '[:find (pull ?e [:recipe/recipe-id
+                             :recipe/prep-time
+                             :recipe/display-name
+                             :recipe/image-url
+                             :recipe/public?])
+             :in $ ?recipe-id
+             :where [?e :recipe/recipe-id ?recipe-id]]
+           (d/db (:conn datomic)) #uuid "471c09cd-d303-4656-a380-1c41dcf096db")
+      ffirst)
 
   (d/q '[:find ?e ?v ?display-name
          :in $ ?account-id

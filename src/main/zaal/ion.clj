@@ -3,6 +3,7 @@
    [zaal.components.datomic-cloud :as datomic-cloud]
    [zaal.components.pedestal-ion :as server]
    [zaal.pedestal :as pedestal]
+   [zaal.pathom :as pathom]
    [io.pedestal.ions :as provider]
    [io.pedestal.http :as http]
    [integrant.core :as ig]))
@@ -12,7 +13,8 @@
                                   ::http/routes (ig/ref ::pedestal/app)
                                   ::http/resource-path "/public"
                                   ::http/chain-provider provider/ion-provider}}
-   ::pedestal/app {:datomic (ig/ref ::datomic-cloud/db)}
+   ::pedestal/app {:pathom-env (ig/ref ::pathom/env)}
+   ::pathom/env {:datomic (ig/ref ::datomic-cloud/db)}
    ::datomic-cloud/db {:server-type :ion
                        :region "us-east-1"
                        :system "zaal-prod"

@@ -3,12 +3,13 @@
             [com.wsscode.pathom3.connect.operation :as pco]
             [com.wsscode.pathom3.connect.planner :as pcp]
             [com.wsscode.pathom3.connect.built-in.plugins :as pbip]
+            [com.wsscode.pathom.viz.ws-connector.core :as pvc]
+            [com.wsscode.pathom.viz.ws-connector.pathom3 :as p.connector]
             [com.wsscode.pathom3.plugin :as p.plugin]
             [datomic.client.api :as d]
             [integrant.core :as ig]))
 
-; create a var to store the cache
-(defonce plan-cache* (atom {}))
+
 
 (def todo-db
   {1 {:todo/id    1
@@ -64,20 +65,25 @@
            (:db env) recipe-id)
       ffirst))
 
+; create a var to store the cache
+(defonce plan-cache* (atom {}))
+
+(def registry [constant-pi
+               todo-items
+               todo-by-id
+               list-recipes
+               get-recipe])
 
 (defn env [{:keys [conn]}]
   ; persistent plan cache
-  (-> {::pcp/plan-cache* plan-cache*}
-      (pci/register [constant-pi
-                     todo-items
-                     todo-by-id
-                     list-recipes
-                     get-recipe])
-      (p.plugin/register [(pbip/env-wrap-plugin #(assoc % :db (d/db conn)))])))
+  (-> {pcp/with-plan-cache plan-cache*}
+      (pci/register registry)
+      (p.plugin/register [(pbip/env-wrap-plugin #(assoc % :db (d/db conn)))])
+      (p.connector/connect-env {::pvc/parser-id `env
+                                ::p.connector/async? false})))
 
 (defmethod ig/init-key ::env
   [_ {:keys [datomic]}]
-  (println datomic)
   (println "Pathom Env")
   (env datomic))
 

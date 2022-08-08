@@ -17,6 +17,7 @@
 
         ;; pathom
         com.wsscode/pathom3 {:mvn/version "2022.07.08-alpha"}
+        com.wsscode/pathom-viz-connector {:mvn/version "2022.02.14"}
 
         ;; pedestal
         org.slf4j/slf4j-simple       {:mvn/version "1.7.32"}

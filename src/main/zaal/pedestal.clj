@@ -83,7 +83,7 @@
 (def graph
   {:name :graph
    :enter (fn [context]
-            (let [query (get-in context [:request :params])
+            (let [query (get-in context [:request :body-params])
                   request-fn (get-in context [:request ::request-fn])]
               (assoc context :response (ok (request-fn query)))))})
 
@@ -93,7 +93,6 @@
    #{["/greet" :get respond-hello :route-name :greet]
      ["/greet/:name" :post [(muuntaja/format-interceptor) (muuntaja/params-interceptor) echo] :route-name :greet-name]
      ["/graph" :post [(muuntaja/format-interceptor (m/create pathom-format-interceptor-defaults))
-                      (muuntaja/params-interceptor)
                       (pathom-env-interceptor pathom-env)
                       graph] :route-name :graph]}))
 

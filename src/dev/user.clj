@@ -15,14 +15,14 @@
 (def restart-dev (do ig-repl/halt ig-repl/go))
 (def reset-all ig-repl/reset-all)
 
-(def app (-> state/system :zaal.server/app))
-(def datomic (-> state/system :zaal.components.datomic-dev-local/db))
+(def app (-> state/system :clojure-experiment.server/app))
+(def datomic (-> state/system :clojure-experiment.components.datomic-dev-local/db))
 
 (comment
 
   (start-dev)
 
-  (zaal.auth0/get-management-token (-> state/system :zaal.components.auth0/auth))
+  (clojure-experiment.auth0/get-management-token (-> state/system :clojure-experiment.components.auth0/auth))
   (ig/load-namespaces
    (-> "config/dev.edn" slurp ig/read-string))
 

@@ -1,4 +1,4 @@
 {:allow []
  :lambdas {}
- :http-direct {:handler-fn zaal.ion/handler}
+ :http-direct {:handler-fn clojure-experiment.ion/handler}
  :app-name "zaal"}

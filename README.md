@@ -55,6 +55,10 @@ Clojure in the Large - Stuart Sierra
 
 https://www.youtube.com/watch?v=1siSPGUu9JQ
 
+Solving Problems the Clojure Way - Rafal Dittwald
+
+https://www.youtube.com/watch?v=vK1DazRK_a0
+
 #### Risks
 
 Clojure no longer has that shiny-new-thing momentum that it had back in ~2012-2017. It seems to have found a place for itself as more of an enterprise type of language where established teams write code in private repositories. As a result there are relatively few examples of large clojure projects and not a lot of talk about it on social media.
@@ -63,6 +67,26 @@ Hiring can be an issue with Clojure - probably not at any sort of scale we are c
 
 We have no Clojure or even Java experts on the team so there is no one to ask for help. This combined with the lack of examples and there could be a lot trail and error and library code reading to figure things out.
 
+## REPL/Interactive development
+
+...
+
+"Running With Scissors: Live Coding With Data" by Stuart Halloway
+
+https://www.youtube.com/watch?v=Qx0-pViyIDU&t=1229s
+
+Debugging and exploring Clojure applications with FlowStorm
+
+https://www.youtube.com/watch?v=A3AzlqNwUXc
+
+Thinking with Portal
+
+https://www.youtube.com/watch?v=Tj-iyDo3bq0
+
+REBL - Stuart Halloway
+
+https://www.youtube.com/watch?v=c52QhiXsmyI
+
 ## System Components
 
 Library decisions that play a significant role in the architecture of the code base.
@@ -70,6 +94,8 @@ Library decisions that play a significant role in the architecture of the code b
 ### Integrant
 
 https://github.com/weavejester/integrant
+
+Enter Integrant: A Micro-framework for Data-Driven Architecture (James Reeves, 2017)
 
 https://www.youtube.com/watch?v=tiWTpp_DPIQ
 
@@ -91,11 +117,17 @@ The first lifecycle library - also came up with the reloaded workflow to use the
 
 https://cognitect.com/blog/2013/06/04/clojure-workflow-reloaded
 
+Stuart Sierra - Components Just Enough Structure
+
 https://www.youtube.com/watch?v=13cmHf_kt-Q
 
 _Mount_
 
 https://github.com/tolitius/mount
+
+_Clip_
+
+https://github.com/juxt/clip
 
 ### Pathom
 
@@ -105,6 +137,11 @@ https://github.com/wilkerlucio/pathom3
 A GraphQL alternative that uses Datalog to create queries and has a more flexible graph structure where resolvers are connected via input and outputs rather than the predetermined model used in GraphQL.
 
 A bunch of videos talking about both Pathom and GraphQL in general:
+
+Data Navigation with Pathom 3 (by Wilker Lucio)
+
+https://www.youtube.com/watch?v=YaHiff2vZ_o
+
 https://pathom3.wsscode.com/media
 
 _Pathom Viz_
@@ -289,6 +326,10 @@ https://clojurescript.org/
 
 ClojureScript is a compiler for Clojure that targets JavaScript. It emits JavaScript code which is compatible with the advanced compilation mode of the Google Closure optimizing compiler.
 
+[shadow-cljs](https://github.com/thheller/shadow-cljs)
+
+shadow-cljs provides everything you need to compile your ClojureScript code with a focus on simplicity and ease of use.
+
 #### React
 
 React was made the defacto standard for cjs libraries by being the first js framework that worked with a functional programming style. There are a bunch to libraries to make using React is cljs easier.
@@ -382,6 +423,8 @@ https://www.youtube.com/watch?v=oyLBGkS5ICk
 ### Malli
 
 https://github.com/metosin/malli
+
+https://www.metosin.fi/blog/malli/
 
 We are building dynamic multi-tenant systems where data models should be first-class: they should drive the runtime value transformations, forms and processes. We should be able to edit the models at runtime, persist them and load them back from a database and over the wire, for both Clojure and ClojureScript. Think of JSON Schema, but for Clojure/Script.
 

@@ -1,22 +1,30 @@
 (ns user
-  (:require [integrant.repl :as ig-repl]
+  (:require [datomic.client.api :as d]
+            [datomic.dev-local :as dl]
             [integrant.core :as ig]
+            [integrant.repl :as ig-repl]
             [integrant.repl.state :as state]
-            [datomic.client.api :as d]))
+            [clojure-experiment.ion :as ion]))
+
+
+(dl/divert-system {:system "zaal-prod"})
 
 (ig-repl/set-prep!
  (fn []
-   (let [config (-> "config/system-map-dev-local.edn" slurp ig/read-string)]
-     (ig/load-namespaces config)
-     config)))
+   (let [dev-overrides (-> "config/system-map-dev-overrides.edn" slurp ig/read-string)
+         system-map-dev (-> ion/system-map
+                            (dissoc :clojure-experiment.components.pedestal/ion-server)
+                            (merge dev-overrides))]
+     (ig/load-namespaces  system-map-dev)
+     system-map-dev)))
 
 (def start-dev ig-repl/go)
 (def stop-dev ig-repl/halt)
 (def restart-dev (do ig-repl/halt ig-repl/go))
 (def reset-all ig-repl/reset-all)
 
-(def app (-> state/system :clojure-experiment.server/app))
-(def datomic (-> state/system :clojure-experiment.components.datomic-dev-local/db))
+(def app (-> state/system :clojure-experiment.pedestal/routes))
+(def datomic (-> state/system :clojure-experiment.components.datomic/db))
 
 (comment
 

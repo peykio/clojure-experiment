@@ -1,30 +1,25 @@
 (ns clojure-experiment.ion
-  (:require
-   [clojure-experiment.components.datomic-cloud :as datomic-cloud]
-   [clojure-experiment.components.pedestal-ion :as server]
-   [clojure-experiment.pedestal :as pedestal]
-   [clojure-experiment.pathom :as pathom]
-   [io.pedestal.ions :as provider]
-   [io.pedestal.http :as http]
-   [integrant.core :as ig]))
+  (:require [clojure-experiment.components.pedestal :as components.pedestal]
+            [clojure-experiment.components.datomic :as components.datomic]
+            [clojure-experiment.pedestal :as pedestal]
+            [clojure-experiment.pathom :as pathom]
+            [integrant.core :as ig]))
 
-(def system-map
-  {::server/server {:service-map {:env :prod
-                                  ::http/routes (ig/ref ::pedestal/app)
-                                  ::http/resource-path "/public"
-                                  ::http/chain-provider provider/ion-provider}}
-   ::pedestal/app {:pathom-env (ig/ref ::pathom/env)}
-   ::pathom/env {:datomic (ig/ref ::datomic-cloud/db)}
-   ::datomic-cloud/db {:server-type :ion
-                       :region "us-east-1"
-                       :system "zaal-prod"
-                       :db-name "zaal-prod"
-                       :endpoint "https://xpznriu6ek.execute-api.us-east-1.amazonaws.com"}})
+(def system-map {::components.pedestal/ion-server {:service-map {:io.pedestal.http/routes (ig/ref ::pedestal/routes)}}
+                 ::pedestal/routes {:pathom-env (ig/ref ::pathom/env)}
+                 ::pathom/env {:datomic (ig/ref ::components.datomic/db)}
+                 ::components.datomic/db {:server-type :ion
+                                          :region "us-east-1"
+                                          :system "zaal-prod"
+                                          :db-name "zaal-prod"
+                                          ;ClientApiGatewayEndpoint output from cloudformation stack
+                                          :endpoint "https://jbd4mj98ra.execute-api.us-east-1.amazonaws.com/"}})
 
-(def app
+(def system
   (delay
-   (-> system-map ig/prep ig/init ::server/server)))
+   (-> system-map ig/prep ig/init ::components.pedestal/ion-server)))
+
 
 (defn handler
   [req]
-  (@app req))
+  (@system req))

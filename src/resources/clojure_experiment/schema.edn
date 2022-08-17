@@ -174,4 +174,52 @@
  {:db/ident :message/read-by
   :db/doc "The message ready by flag"
   :db/valueType :db.type/ref
+  :db/cardinality :db.cardinality/many}
+
+
+ ; file attributes
+ {:db/ident :file/file-id
+  :db/doc "The id of the file"
+  :db/unique :db.unique/identity
+  :db/valueType :db.type/uuid
+  :db/cardinality :db.cardinality/one}
+
+ {:db/ident :file/type
+  :db/doc "file type"
+  :db/valueType :db.type/string
+  :db/cardinality :db.cardinality/one}
+
+ ; specimen attributes
+ {:db/ident :specimen/specimen-id
+  :db/doc "The id of the specimen"
+  :db/unique :db.unique/identity
+  :db/valueType :db.type/uuid
+  :db/cardinality :db.cardinality/one}
+
+ {:db/ident :specimen/type
+  :db/doc "specimen type"
+  :db/valueType :db.type/string
+  :db/cardinality :db.cardinality/one}
+
+ {:db/ident :specimen/files
+  :db/doc "ref to files"
+  :db/valueType :db.type/ref
+  :db/cardinality :db.cardinality/many}
+
+
+ ; participant attributes
+ {:db/ident :participant/participant-id
+  :db/doc "The id of the participant"
+  :db/unique :db.unique/identity
+  :db/valueType :db.type/uuid
+  :db/cardinality :db.cardinality/one}
+
+ {:db/ident :participant/specimens
+  :db/doc "ref to specimens"
+  :db/valueType :db.type/ref
+  :db/cardinality :db.cardinality/many}
+
+ {:db/ident :participant/files
+  :db/doc "ref to files"
+  :db/valueType :db.type/ref
   :db/cardinality :db.cardinality/many}]

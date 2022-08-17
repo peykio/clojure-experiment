@@ -3,7 +3,6 @@
             [com.wsscode.pathom3.connect.operation.transit :as pcot]
             [com.wsscode.pathom3.interface.eql :as p.eql]
             [integrant.core :as ig]
-            [io.pedestal.http :as http]
             [io.pedestal.http.route :as route]
             [muuntaja.core :as m]
             [muuntaja.interceptor :as muuntaja]))

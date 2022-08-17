@@ -1,6 +1,7 @@
 (ns clojure-experiment.components.datomic
   (:require [datomic.client.api :as d]
             [integrant.core :as ig]
+            [clojure-experiment.validation :as validation]
             [clojure.edn :as edn]
             [clojure.java.io :as io]))
 
@@ -12,9 +13,11 @@
   [conn]
   (let [db (d/db conn)
         tx #(d/transact conn {:tx-data %})]
-    (when-not (ident-has-attr? db :account/account-id :db/ident)
-      (tx (-> (io/resource "clojure_experiment/schema.edn") slurp edn/read-string))
-      (tx (-> (io/resource "clojure_experiment/seed.edn") slurp edn/read-string)))))
+    (tx (-> (io/resource "clojure_experiment/schema.edn") slurp edn/read-string))
+    (when-not (ident-has-attr? db :account/account-id :db.attr/preds)
+      (tx validation/attr-pred))
+    (when-not (ident-has-attr? db :account/validate :db.entity/attrs)
+      (tx validation/entity-attrs))))
 
 (defmethod ig/init-key ::db
   [_ config]

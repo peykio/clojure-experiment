@@ -9,70 +9,35 @@
             [datomic.client.api :as d]
             [integrant.core :as ig]))
 
+;; request query
+;; (-> env
+;;     :com.wsscode.pathom3.connect.planner/graph
+;;     :com.wsscode.pathom3.connect.planner/index-ast
+;;     :app/list-participants
+;;     :query)
 
-
-(def todo-db
-  {1 {:todo/id    1
-      :todo/title "Write foreign docs"
-      :todo/done? true}
-   2 {:todo/id    2
-      :todo/title "Integrate the whole internet"
-      :todo/done? false}})
-
-(pco/defresolver todo-items []
+(pco/defresolver list-participants [env _]
   {::pco/output
-   [{:app/all-todos
-     [:todo/id]}]}
-  ; export only the ids to force the usage of another resolver for
-  ; the details
-  {:app/all-todos
-   [{:todo/id 1}
-    {:todo/id 2}]})
+   [{:app/list-participants
+     [:participant/participant-id
+      {:participant/specimens [:specimen/specimen-id
+                               :specimen/type
+                               {:specimen/files [:file/file-id]}]}]}]}
+  {:app/list-participants
 
-(pco/defresolver todo-by-id [{:todo/keys [id]}]
-  {::pco/output
-   [:todo/id
-    :todo/title
-    :todo/done?]}
-  (get todo-db id))
-
-(pco/defresolver constant-pi []
-  {:acme.math/pi 3.14})
-
-(pco/defresolver list-recipes [env _]
-  {::pco/output
-   [{:app/all-recipes
-     [:recipe/recipe-id]}]}
-  {:app/all-recipes (map first (d/q '[:find (pull ?e [:recipe/recipe-id])
-                                      :where [?e :recipe/public? true]]
-                                    (:db env)))})
-
-(pco/defresolver get-recipe [env {:recipe/keys [recipe-id]}]
-  {::pco/output
-   [:recipe/recipe-id
-    :recipe/prep-time
-    :recipe/display-name
-    :recipe/image-url
-    :recipe/public?]}
-
-  (-> (d/q '[:find (pull ?e [:recipe/recipe-id
-                             :recipe/prep-time
-                             :recipe/display-name
-                             :recipe/image-url
-                             :recipe/public?])
-             :in $ ?recipe-id
-             :where [?e :recipe/recipe-id ?recipe-id]]
-           (:db env) recipe-id)
-      ffirst))
+   (map first (d/q {:query '{:find [(pull ?e [:participant/participant-id
+                                              {[:participant/specimens :limit 10] [:specimen/specimen-id
+                                                                                   :specimen/type
+                                                                                   {[:specimen/files :limit 10] [:file/file-id
+                                                                                                                 :file/type]}]}])]
+                             :where [[?e :participant/participant-id]]}
+                    :limit 10
+                    :args [(:db env)]}))})
 
 ; create a var to store the cache
 (defonce plan-cache* (atom {}))
 
-(def registry [constant-pi
-               todo-items
-               todo-by-id
-               list-recipes
-               get-recipe])
+(def registry [list-participants])
 
 (defn env [{:keys [conn]}]
   ; persistent plan cache
@@ -86,4 +51,3 @@
   [_ {:keys [datomic]}]
   (println "Pathom Env")
   (env datomic))
-

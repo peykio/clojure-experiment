@@ -1,5 +1,5 @@
 (ns user
-  (:require [clojure.core.async :as a :refer (<! <!! >! >!! close! go go-loop timeout to-chan! to-chan!!)]
+  (:require [clojure.core.async :as a :refer (<! >! >!! go-loop to-chan! to-chan!!)]
             [datomic.client.api :as d]
             [datomic.dev-local :as dl]
             [integrant.core :as ig]
@@ -178,7 +178,13 @@
       ffirst
       time)
 
-  (def participant-id #uuid "544d0ac6-c3f1-4bb0-9fd4-615c9fbdaac0")
+  (def participant-id (->> (d/q {:query '[:find ?v (count ?s)
+                                          :where
+                                          [?p :participant/participant-id ?v]
+                                          [?p :participant/specimens ?s]]
+                                 :args [(d/db (:conn datomic))]})
+                           (sort-by last >)
+                           ffirst))
 
   ;; get participant
   (d/q '[:find (pull ?p ["*"])
@@ -245,6 +251,15 @@
             ;;  [?f :file/file-id _] ;originally had this line and it made the query 4x slower
              [?f :file/type ?ft]]
            (d/db (:conn datomic)))
+      time)
+
+
+  (-> (d/q {:query '{:find [(pull ?s [:specimen/specimen-id])]
+                     :in [$ ?participant-id]
+                     :where [[?p :participant/participant-id ?participant-id]
+                             [?p :participant/specimens ?s]]}
+
+            :args [(d/db (:conn datomic)) participant-id]})
       time)
 
   (d/pull (d/db (:conn datomic)) {:eid [:account/account-id "mike@mailinator.com"]

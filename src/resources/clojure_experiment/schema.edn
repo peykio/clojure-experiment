@@ -176,33 +176,66 @@
   :db/valueType :db.type/ref
   :db/cardinality :db.cardinality/many}
 
-
- ; file attributes
- {:db/ident :file/file-id
-  :db/doc "The id of the file"
+ ; remote-storage-file attribute
+ {:db/ident :remote-storage-file/remote-storage-file-id
+  :db/doc "The generated id of the remote storage file."
   :db/unique :db.unique/identity
   :db/valueType :db.type/uuid
   :db/cardinality :db.cardinality/one}
 
- {:db/ident :file/type
-  :db/doc "file type"
+ {:db/ident :remote-storage-file/uri
+  :db/doc "The full uri of the remote storage file. This is unique and can be used as an identifier since there can only ever be one file per uri."
+  :db/unique :db.unique/identity
+  :db/valueType :db.type/uri
+  :db/cardinality :db.cardinality/one}
+
+ {:db/ident :remote-storage-file/hash
+  :db/doc "The computed hash of the remote storage file. Even though this is unique per file contents it cannot be used as an identifier since there is nothing stopping a file from being copied multiple times across remote storage."
   :db/valueType :db.type/string
   :db/cardinality :db.cardinality/one}
 
+ ; file attributes
+ {:db/ident :file/file-id
+  :db/doc "The generated id of the file"
+  :db/unique :db.unique/identity
+  :db/valueType :db.type/uuid
+  :db/cardinality :db.cardinality/one}
+
+ {:db/ident :file/external-id
+  :db/doc "External id used to reference this file. This will be used to link the file with other scientific entities."
+  :db/valueType :db.type/string
+  :db/cardinality :db.cardinality/one}
+
+ {:db/ident :file/expected-uri
+  :db/doc "The expected uri of this file. This will be used to find its matching remote storage file."
+  :db/unique :db.unique/identity
+  :db/valueType :db.type/uri
+  :db/cardinality :db.cardinality/one}
+
+ {:db/ident :file/expected-hash
+  :db/doc "The expected computed hash of this file. This will be used to verify the file was uploaded correctly by matching it with the computed hash of a matching remote storage file. The expected hash is not a unique identifier because the same file couild be expected in multiple places."
+  :db/valueType :db.type/string
+  :db/cardinality :db.cardinality/one}
+
+ {:db/ident :file/type
+  :db/doc "file type - mostly used to test frequencies now."
+  :db/valueType :db.type/string
+  :db/cardinality :db.cardinality/one}
+
+
  ; specimen attributes
  {:db/ident :specimen/specimen-id
-  :db/doc "The id of the specimen"
+  :db/doc "The generated id of the specimen"
   :db/unique :db.unique/identity
   :db/valueType :db.type/uuid
   :db/cardinality :db.cardinality/one}
 
  {:db/ident :specimen/type
-  :db/doc "specimen type"
+  :db/doc "specimen type - mostly used to test frequencies now."
   :db/valueType :db.type/string
   :db/cardinality :db.cardinality/one}
 
  {:db/ident :specimen/files
-  :db/doc "ref to files"
   :db/valueType :db.type/ref
   :db/cardinality :db.cardinality/many}
 
@@ -222,4 +255,35 @@
  {:db/ident :participant/files
   :db/doc "ref to files"
   :db/valueType :db.type/ref
-  :db/cardinality :db.cardinality/many}]
+  :db/cardinality :db.cardinality/many}
+
+ ;user
+;;  {:db/ident :user/user-id
+;;   :db/doc "The id of the participant"
+;;   :db/unique :db.unique/identity
+;;   :db/valueType :db.type/uuid
+;;   :db/cardinality :db.cardinality/one}
+
+;;  {:db/ident :user/email
+;;   :db/doc "The email of the user"
+;;   :db/unique :db.unique/identity
+;;   :db/valueType :db.type/string
+;;   :db/cardinality :db.cardinality/many}
+
+ ;authz
+;;  {:db/ident :authz/authz-id
+;;   :db/doc "The id of the authz link"
+;;   :db/unique :db.unique/identity
+;;   :db/valueType :db.type/uuid
+;;   :db/cardinality :db.cardinality/one}
+
+;;  {:db/ident :authz/authz-node
+;;   :db/doc "The ref to a user or group"
+;;   :db/valueType :db.type/ref
+;;   :db/cardinality :db.cardinality/one}
+
+;;  {:db/ident :authz/target
+;;   :db/doc "The ref to a user or group"
+;;   :db/valueType :db.type/ref
+;;   :db/cardinality :db.cardinality/one}
+ ]

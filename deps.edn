@@ -14,6 +14,7 @@
         ovotech/ring-jwt {:mvn/version "2.2.1"}
         com.datomic/ion {:mvn/version "1.0.59"}
         metosin/muuntaja {:mvn/version "0.6.8"}
+        org.clj-commons/digest {:mvn/version "1.4.100"}
 
         ;; pathom
         com.wsscode/pathom3 {:mvn/version "2022.07.08-alpha"}

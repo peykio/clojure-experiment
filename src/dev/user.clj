@@ -31,20 +31,16 @@
 
 ;; create
 (defn create-remote-storage-file
-  "Create a remote storage file with a generate uuid and uri"
-  [_]
-  (let
-   [id (random-uuid)]
-    {:remote-storage-file/remote-storage-file-id id
-     :remote-storage-file/uri (new java.net.URI (str "s3://us-east-1/" id (rand-nth [".cram" ".fastq" ".bam"])))}))
+  "Create a file that has been found in remote storage."
+  [uri]
+  {:file/uri uri
+   :file/remote-storage-uri uri})
 
-(defn create-file
-  [_]
-  (let
-   [id (random-uuid)]
-    {:file/file-id id
-     :file/external-id (str "FL-" id)
-     :file/type (rand-nth ["FileA" "FileB" "FileC" "FileD"])}))
+(defn create-expected-file
+  "Create an expected file."
+  [uri]
+  {:file/uri uri
+   :file/expected-uri uri})
 
 (defn create-specimen [_] {:specimen/specimen-id (random-uuid)
                            :specimen/type (rand-nth ["SpeciA" "SpeciB" "SpeciC"])})
@@ -53,28 +49,18 @@
 ;; pipeline
 (defn hash-remote-storage-file
   "Generate an md5 hash using the file id."
-  [cf]
-  (assoc cf :remote-storage-file/hash (digest/md5 (str (:remote-storage-file/remote-storage-file-id cf)))))
-
-(defn set-file-expected-uri-match
-  "Set the file's uri to match a remote storage files uri."
-  [{:keys [remote-storage-file/uri]} f]
-  (merge f {:file/expected-uri uri}))
-
-(defn set-file-expected-uri-mismatch
-  "Intentially set the file's uri to a value that will not match any remote storage files."
   [f]
-  (merge f {:file/expected-uri (new java.net.URI (str "s3://us-east-1/" (:file/file-id f) (rand-nth [".cram" ".fastq" ".bam"])))}))
+  (assoc f :file/remote-storage-computed-hash (digest/md5 (str (:file/uri f)))))
 
 (defn set-file-expected-hash-match
   "Set the expected hash of the file to that of an existing remote storage file."
-  [{:keys [remote-storage-file/file-id]} f]
-  (merge f {:file/expected-hash (digest/md5 (str file-id))}))
+  [f]
+  (merge f {:file/expected-hash  (digest/md5 (str (:file/uri f)))}))
 
 (defn set-file-expected-hash-mismatch
   "Generate an expected hash that will not match any remote storage file."
   [f]
-  (merge f {:file/expected-hash (digest/md5 (str (:file/file-id f)))}))
+  (merge f {:file/expected-hash (digest/md5 (str (random-uuid)))}))
 
 (defn link-file-to-specimen
   [specimen file]
@@ -145,29 +131,24 @@
   ;; n 10   "Elapsed time: 1490.274417 msecs" 1.5s
   ;; n 100  "Elapsed time: 168802.894125 msecs" 2.8s =(
   (-> (let [n 1000
-            concurrency 10
-            remote-storage-files (map create-remote-storage-file (range (* n 130)))
-            files (map create-file (range (* n 100)))
+            concurrency 1
+            uris (map (fn [_] (new java.net.URI (str "s3://us-east-1/" (random-uuid) (rand-nth [".cram" ".fastq" ".bam"])))) (range (* n 150)))
+            remote-storage-files (map create-remote-storage-file (random-sample 0.7 uris))
+            expected-files (map create-expected-file (random-sample 0.7 uris))
             specimens (map create-specimen (range (* n 10)))
             participants (map create-participant (range (* n 1)))]
         (tx-pipeline (:conn datomic) concurrency (to-chan!! (partition-all 1000 remote-storage-files)))
-        (tx-pipeline (:conn datomic) concurrency (to-chan!! (partition-all 1000 files)))
+        (tx-pipeline (:conn datomic) concurrency (to-chan!! (partition-all 1000 expected-files)))
+        (tx-pipeline (:conn datomic) concurrency (to-chan!! (partition-all 1000 (map hash-remote-storage-file (random-sample 0.8 remote-storage-files)))))
+        (tx-pipeline (:conn datomic) concurrency (to-chan!! (partition-all 1000 (map (fn
+                                                                                       [f]
+                                                                                       (if (< (rand-int 10) 9)
+                                                                                         (set-file-expected-hash-match f)
+                                                                                         (set-file-expected-hash-mismatch f)))
+                                                                                     (random-sample 0.8 expected-files)))))
         (tx-pipeline (:conn datomic) concurrency (to-chan!! (partition-all 1000 specimens)))
         (tx-pipeline (:conn datomic) concurrency (to-chan! (partition-all 1000 participants)))
-        (tx-pipeline (:conn datomic) concurrency (to-chan!! (partition-all 1000 (map hash-remote-storage-file (random-sample 0.8 remote-storage-files)))))
-        (tx-pipeline (:conn datomic) concurrency (to-chan!! (partition-all 1000 (map-indexed (fn
-                                                                                               [idx f]
-                                                                                               (if (< (rand-int 10) 8)
-                                                                                                 (set-file-expected-uri-match (nth remote-storage-files idx) f)
-                                                                                                 (set-file-expected-uri-mismatch f)))
-                                                                                             (random-sample 0.9 files)))))
-        (tx-pipeline (:conn datomic) concurrency (to-chan!! (partition-all 1000 (map-indexed (fn
-                                                                                               [idx f]
-                                                                                               (if (< (rand-int 10) 9)
-                                                                                                 (set-file-expected-hash-match (nth remote-storage-files idx) f)
-                                                                                                 (set-file-expected-hash-mismatch f)))
-                                                                                             (random-sample 0.8 files)))))
-        (tx-pipeline (:conn datomic) concurrency (to-chan!! (partition-all 1000 (map (fn [f] (link-file-to-specimen (rand-nth specimens) f)) (random-sample 0.7 files)))))
+        (tx-pipeline (:conn datomic) concurrency (to-chan!! (partition-all 1000 (map (fn [f] (link-file-to-specimen (rand-nth specimens) f)) (random-sample 0.7 expected-files)))))
         (tx-pipeline (:conn datomic) concurrency (to-chan! (partition-all 1000 (map (fn [s] (link-specimen-to-participant (rand-nth participants) s)) (random-sample 0.7 specimens))))))
       time)
 
@@ -215,7 +196,15 @@
   ;; count files
   (-> (d/q '[:find (count ?f)
              :where
-             [?f :file/file-id]]
+             [?f :file/uri]]
+           (d/db (:conn datomic)))
+      ffirst
+      time)
+
+  ;; count expected files
+  (-> (d/q '[:find (count ?f)
+             :where
+             [?f :file/expected-uri]]
            (d/db (:conn datomic)))
       ffirst
       time)
@@ -223,54 +212,62 @@
   ;; count remote storage files
   (-> (d/q '[:find (count ?f)
              :where
-             [?f :remote-storage-file/remote-storage-file-id]]
+             [?f :file/remote-storage-uri]]
            (d/db (:conn datomic)))
       ffirst
       time)
 
-  (-> (d/q {:query '[:find ?e ?v
+  ; count expected files with matching remote uri
+  (-> (d/q {:query '[:find (count ?f)
                      :where
-                     [?e :remote-storage-file/hash ?v]]
-            :limit 10
+                     [?f :file/expected-uri ?eu]
+                     [?f :file/remote-storage-uri ?eu]]
+            :limit 1
             :args [(d/db (:conn datomic))]})
+      ffirst
       time)
 
-  ; files with matching uri
+  ; count expected files with no remote uri
   (-> (d/q '[:find (count ?f)
              :where
-             [?f :file/expected-uri ?eu]
-             [_ :remote-storage-file/uri ?eu]]
+             [?f :file/expected-uri]
+             [(missing? $ ?f :file/remote-storage-uri)]]
            (d/db (:conn datomic)))
       ffirst
       time)
 
-  ; file with mismatch uri
+  ; count unknown remote files
   (-> (d/q '[:find (count ?f)
              :where
-             [?f :file/expected-uri ?eu]
-             (not [_ :remote-storage-file/uri ?eu])]
-           (d/db (:conn datomic)))
-      ffirst
-      time)
-
-  ; files with no uri value
-  (-> (d/q '[:find (count ?v)
-             :where
-             [?f :file/file-id ?v]
+             [?f :file/remote-storage-uri]
              [(missing? $ ?f :file/expected-uri)]]
            (d/db (:conn datomic)))
       ffirst
       time)
 
-  (-> (d/q {:query '[:find (pull ?f ["*"])
+  ; count expected files with matching remote uri and hash
+  (-> (d/q {:query '[:find (count ?f)
                      :where
                      [?f :file/expected-uri ?eu]
-                    ;;  [_ :remote-storage-file/uri ?eu]
-                     ]
-            :limit 1
+                     [?f :file/remote-storage-uri ?eu]
+                     [?f :file/expected-hash ?eh]
+                     [?f :file/remote-storage-computed-hash ?eh]]
             :args [(d/db (:conn datomic))]})
       ffirst
       time)
+
+  ;; matching uri not matching hash
+  (-> (d/q {:query '[:find (count ?f)
+                     :where
+                     [?f :file/expected-uri ?eu]
+                     [?f :file/remote-storage-uri ?eu]
+                     (not-join [?f]
+                               [?f :file/expected-hash ?eh]
+                               [?f :file/remote-storage-computed-hash ?eh])]
+            :args [(d/db (:conn datomic))]})
+      ffirst
+      time)
+
 
   (def participant-id (->> (d/q {:query '[:find ?v (count ?s)
                                           :where
@@ -300,8 +297,7 @@
   (-> (d/q '[:find (pull ?p [:participant/participant-id
                              {[:participant/specimens :limit 10] [:specimen/specimen-id
                                                                   :specimen/type
-                                                                  {[:specimen/files :limit 10] [:file/file-id
-                                                                                                :file/type]}]}])
+                                                                  {[:specimen/files :limit 10] [:file/uri]}]}])
              :in $ ?participant-id
              :where
              [?p :participant/participant-id ?participant-id]]
@@ -359,7 +355,7 @@
       time)
 
   ;; file frequencies
-  (-> (d/q '[:find (pull ?f [:file/file-id :participant/_files])
+  (-> (d/q '[:find (pull ?f [:file/uri :participant/_files])
              :where
              [?p :participant/files ?f]]
            (d/db (:conn datomic)))

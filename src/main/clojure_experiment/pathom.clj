@@ -22,14 +22,21 @@
      [:participant/participant-id
       {:participant/specimens [:specimen/specimen-id
                                :specimen/type
-                               {:specimen/files [:file/file-id]}]}]}]}
+                               {:specimen/files [:file/url
+                                                 :file/expected-uri
+                                                 :file/expected-hash
+                                                 :file/remote-storage-uri
+                                                 :file/remote-storage-computed-hash]}]}]}]}
   {:app/list-participants
 
    (map first (d/q {:query '{:find [(pull ?e [:participant/participant-id
                                               {[:participant/specimens :limit 10] [:specimen/specimen-id
                                                                                    :specimen/type
-                                                                                   {[:specimen/files :limit 10] [:file/file-id
-                                                                                                                 :file/type]}]}])]
+                                                                                   {[:specimen/files :limit 10] [:file/url
+                                                                                                                 :file/expected-uri
+                                                                                                                 :file/expected-hash
+                                                                                                                 :file/remote-storage-uri
+                                                                                                                 :file/remote-storage-computed-hash]}]}])]
                              :where [[?e :participant/participant-id]]}
                     :limit 10
                     :args [(:db env)]}))})

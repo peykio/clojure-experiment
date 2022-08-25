@@ -11,7 +11,7 @@
                  ::components.datomic/db {:server-type :ion
                                           :region "us-east-1"
                                           :system "zaal-prod"
-                                          :db-name "zaal-prod"
+                                          :db-name "zaal-db"
                                           ;ClientApiGatewayEndpoint output from cloudformation stack
                                           :endpoint "https://jbd4mj98ra.execute-api.us-east-1.amazonaws.com/"}})
 

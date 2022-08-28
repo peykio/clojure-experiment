@@ -130,8 +130,8 @@
   ;; 10000
   ;; n 10   "Elapsed time: 1490.274417 msecs" 1.5s
   ;; n 100  "Elapsed time: 168802.894125 msecs" 2.8s =(
-  (-> (let [n 1000
-            concurrency 1
+  (-> (let [n 100
+            concurrency 10
             uris (map (fn [_] (new java.net.URI (str "s3://us-east-1/" (random-uuid) (rand-nth [".cram" ".fastq" ".bam"])))) (range (* n 150)))
             remote-storage-files (map create-remote-storage-file (random-sample 0.7 uris))
             expected-files (map create-expected-file (random-sample 0.7 uris))
@@ -149,6 +149,10 @@
         (tx-pipeline (:conn datomic) concurrency (to-chan!! (partition-all 1000 specimens)))
         (tx-pipeline (:conn datomic) concurrency (to-chan! (partition-all 1000 participants)))
         (tx-pipeline (:conn datomic) concurrency (to-chan!! (partition-all 1000 (map (fn [f] (link-file-to-specimen (rand-nth specimens) f)) (random-sample 0.7 expected-files)))))
+        ;; some files can connect to multiple specimen
+        (let [multi-spec-files (random-sample 0.2 expected-files)]
+          (repeat 3
+                  (tx-pipeline (:conn datomic) concurrency (to-chan!! (partition-all 1000 (map (fn [f] (link-file-to-specimen (rand-nth specimens) f)) multi-spec-files))))))
         (tx-pipeline (:conn datomic) concurrency (to-chan! (partition-all 1000 (map (fn [s] (link-specimen-to-participant (rand-nth participants) s)) (random-sample 0.7 specimens))))))
       time)
 
@@ -156,7 +160,7 @@
   (-> (d/q {:query '{:find [?p ?v]
                      :where
                      [[?p :participant/participant-id ?v]]}
-
+            :limit 10
             :args [(d/db (:conn datomic))]})
       time)
 
@@ -285,13 +289,22 @@
        (d/db (:conn datomic)) participant-id)
 
   ;; get participant specimen file count
-  (d/q '[:find ?participant-id ?s (count ?f)
-         :in $ ?participant-id
-         :where
-         [?p :participant/participant-id ?participant-id]
-         [?p :participant/specimens ?s]
-         [?s :specimen/files ?f]]
-       (d/db (:conn datomic)) participant-id)
+  (-> (d/q '[:find ?s (count ?f)
+             :in $ ?participant-id
+             :where
+             [?p :participant/participant-id ?participant-id]
+             [?p :participant/specimens ?s]
+             [?s :specimen/files ?f]]
+           (d/db (:conn datomic)) participant-id)
+      time)
+
+  (-> (d/q {:query '{:find [?v (count ?s) #_(pull ?e [:participant/participant-id {:participant/specimens [:specimen/specimen-id]}])]
+                     :in [$]
+                     :where [[?e :participant/participant-id ?v]
+                             [?e :participant/specimens ?s]]}
+            :limit 100
+            :args [(d/db (:conn datomic))]})
+      time)
 
   ;; participant tree -> specimen -> files
   (-> (d/q '[:find (pull ?p [:participant/participant-id

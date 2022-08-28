@@ -14,10 +14,11 @@
   (let [db (d/db conn)
         tx #(d/transact conn {:tx-data %})]
     (tx (-> (io/resource "clojure_experiment/schema.edn") slurp edn/read-string))
-    (when-not (ident-has-attr? db :account/account-id :db.attr/preds)
-      (tx validation/attr-pred))
-    (when-not (ident-has-attr? db :account/validate :db.entity/attrs)
-      (tx validation/entity-attrs))))
+    ;; (when-not (ident-has-attr? db :account/account-id :db.attr/preds)
+    ;;   (tx validation/attr-pred))
+    ;; (when-not (ident-has-attr? db :account/validate :db.entity/attrs)
+    ;;   (tx validation/entity-attrs))
+    ))
 
 (defmethod ig/init-key ::db
   [_ config]

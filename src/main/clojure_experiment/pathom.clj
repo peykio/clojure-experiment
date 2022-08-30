@@ -17,6 +17,34 @@
 ;;     :app/list-participants
 ;;     :query)
 
+(defn get-params [lookup env]
+  (-> env
+      pco/params
+      (assoc :lookup lookup)))
+
+(defn get-pagination-params [params]
+  {:limit (:limit params 10)
+   :offset (:offset params 0)})
+
+(defn pagination
+  "Datomic returns lazy sequences which lets us use standard seq functions to mimic database limit/offset"
+  [params]
+  (let [pagination-params (-> params get-pagination-params)]
+    (comp
+     (drop (:offset pagination-params))
+     (take (:limit pagination-params)))))
+
+(defn lookup-pagination
+  "The results of nested resolvers are grouped by the parent id using datalog pull syntax instead of being returned directly. This helps Pathom match results but also means we need to reach inside each returned item and set pagination values directly."
+  [{:keys [lookup] :as params} e]
+  (update e lookup #(into [] (pagination params) %)))
+
+(defn lookup-pipeline
+  [params]
+  (comp
+   (map first)
+   (map #(lookup-pagination params %))))
+
 (pco/defresolver list-participants-fast [env _]
   {::pco/output [{:app/list-participants-fast
                   [:participant/participant-id
@@ -66,37 +94,6 @@
              :args [(:db env) (map :participant/participant-id items)]})
        (mapv first)
        (coll/restore-order2 items :participant/participant-id)))
-
-(defn get-params [lookup env]
-  (-> env
-      :com.wsscode.pathom3.connect.planner/graph
-      :com.wsscode.pathom3.connect.planner/index-ast
-      lookup
-      :params
-      (assoc :lookup lookup)))
-
-(defn get-pagination-params [params]
-  {:limit (:limit params 10)
-   :offset (:offset params 0)})
-
-(defn pagination
-  "Datomic returns lazy sequences which lets us use standard seq functions to mimic database limit/offset"
-  [params]
-  (let [pagination-params (-> params get-pagination-params)]
-    (comp
-     (drop (:offset pagination-params))
-     (take (:limit pagination-params)))))
-
-(defn lookup-pagination
-  "The results of nested resolvers are grouped by the parent id using datalog pull syntax instead of being returned directly. This helps Pathom match results but also means we need to reach inside each returned item and set pagination values directly."
-  [{:keys [lookup] :as params} e]
-  (update e lookup #(into [] (pagination params) %)))
-
-(defn lookup-pipeline
-  [params]
-  (comp
-   (map first)
-   (map #(lookup-pagination params %))))
 
 (pco/defresolver list-participant-specimens [env items]
   {::pco/input [:participant/participant-id]

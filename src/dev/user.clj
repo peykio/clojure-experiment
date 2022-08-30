@@ -9,7 +9,7 @@
             [clj-commons.digest :as digest]))
 
 
-(dl/divert-system {:system "zaal-prod"})
+;; (dl/divert-system {:system "zaal-prod"})
 
 (defn set-prep! []
   (let [dev-overrides (-> "config/system-map-dev-overrides.edn" slurp ig/read-string)

@@ -4,3 +4,4 @@
 .lsp/.cache
 .calva
 .datomic-ions
+.portal

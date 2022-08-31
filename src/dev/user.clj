@@ -1,5 +1,7 @@
 (ns user
   (:require [clojure.core.async :as a :refer (<! >! >!! go-loop to-chan! to-chan!!)]
+            [portal.api :as p]
+            [clojure.test :as t]
             [datomic.client.api :as d]
             [datomic.dev-local :as dl]
             [integrant.core :as ig]
@@ -9,7 +11,7 @@
             [clj-commons.digest :as digest]))
 
 
-;; (dl/divert-system {:system "zaal-prod"})
+(dl/divert-system {:system "zaal-prod"})
 
 (defn set-prep! []
   (let [dev-overrides (-> "config/system-map-dev-overrides.edn" slurp ig/read-string)
@@ -113,6 +115,11 @@
 
   (set! *print-namespace-maps* false)
 
+
+
+;; or with an extension installed, do:
+  (def p (p/open {:launcher :vs-code}))
+  (add-tap #'p/submit)
   ;; sync
   ;; 1000
   ;; n 1    "Elapsed time: 2328.086 msecs" 2.3s
@@ -162,6 +169,7 @@
                      [[?p :participant/participant-id ?v]]}
             :limit 10
             :args [(d/db (:conn datomic))]})
+      tap>
       time)
 
   ;; list participants with specimen counts - slower

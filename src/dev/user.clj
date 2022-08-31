@@ -1,7 +1,7 @@
 (ns user
   (:require [clojure.core.async :as a :refer (<! >! >!! go-loop to-chan! to-chan!!)]
             [portal.api :as p]
-            [clojure.test :as t]
+            [flow-storm.api :as fs-api]
             [datomic.client.api :as d]
             [datomic.dev-local :as dl]
             [integrant.core :as ig]
@@ -115,11 +115,12 @@
 
   (set! *print-namespace-maps* false)
 
-
-
-;; or with an extension installed, do:
-  (def p (p/open {:launcher :vs-code}))
+  ;; portal
+  (def p (p/open))
   (add-tap #'p/submit)
+  ;; flowstorm 
+  (fs-api/local-connect)
+
   ;; sync
   ;; 1000
   ;; n 1    "Elapsed time: 2328.086 msecs" 2.3s
@@ -381,3 +382,4 @@
              [?p :participant/files ?f]]
            (d/db (:conn datomic)))
       time))
+

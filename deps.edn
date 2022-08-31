@@ -45,7 +45,9 @@
                               com.datomic/client-cloud {:mvn/version "1.0.120"}
                               integrant/repl {:mvn/version "0.3.2"}
                               io.pedestal/pedestal.jetty   {:mvn/version "0.5.10"}
-                              djblue/portal {:mvn/version "0.29.1"}}}
+                              djblue/portal {:mvn/version "0.29.1"}
+                              com.github.jpmonettas/flow-storm-dbg {:mvn/version "2.3.141"}
+                              com.github.jpmonettas/flow-storm-inst {:mvn/version "2.3.141"}}}
 
            :test {:extra-paths ["test"]
                   :extra-deps {com.datomic/dev-local {:mvn/version "0.9.235"}

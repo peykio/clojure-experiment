@@ -17,10 +17,11 @@
 ;;     :app/list-participants
 ;;     :query)
 
-(defn get-params [lookup env]
-  (-> env
-      pco/params
-      (assoc :lookup lookup)))
+#trace
+ (defn get-params [lookup env]
+   (-> env
+       pco/params
+       (assoc :lookup lookup)))
 
 (defn get-pagination-params [params]
   {:limit (:limit params 10)

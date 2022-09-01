@@ -8,37 +8,50 @@
             [com.wsscode.pathom3.plugin :as p.plugin]
             [com.wsscode.misc.coll :as coll]
             [datomic.client.api :as d]
-            [integrant.core :as ig]))
+            [integrant.core :as ig]
+            [malli.core :as m]
+            [malli.transform :as mt]
+            [malli.error :as me]))
 
-;; request query
-;; (-> env
-;;     :com.wsscode.pathom3.connect.planner/graph
-;;     :com.wsscode.pathom3.connect.planner/index-ast
-;;     :app/list-participants
-;;     :query)
 
-#trace
- (defn get-params [lookup env]
-   (-> env
-       pco/params
-       (assoc :lookup lookup)))
+(def LIMIT_MAX 100)
+(def ?limit [:int {:min 0 :max LIMIT_MAX :default 10}])
+(def ?offset [:int {:min 0 :default 0}])
+(def ?pagination [:map {:closed true}
+                  [:limit ?limit]
+                  [:offset ?offset]])
 
-(defn get-pagination-params [params]
-  {:limit (:limit params 10)
-   :offset (:offset params 0)})
+(defn corce-pagination-params [params]
+  (let [ps  (m/decode ?pagination params (mt/transformer
+                                          mt/strip-extra-keys-transformer
+                                          mt/default-value-transformer
+                                          mt/string-transformer))]
+    (if (m/validate ?pagination ps)
+      (assoc params :pagination ps)
+      (throw (ex-info (str (me/humanize (m/explain ?pagination ps))) {})))))
+
+(defn get-params [env]
+  (-> env
+      pco/params
+      corce-pagination-params))
+
+
+(defn get-lookup-params [lookup env]
+  (-> env
+      get-params
+      (assoc :lookup lookup)))
 
 (defn pagination
   "Datomic returns lazy sequences which lets us use standard seq functions to mimic database limit/offset"
   [params]
-  (let [pagination-params (-> params get-pagination-params)]
-    (comp
-     (drop (:offset pagination-params))
-     (take (:limit pagination-params)))))
+  (comp
+   (drop (:offset params))
+   (take (:limit params))))
 
 (defn lookup-pagination
   "The results of nested resolvers are grouped by the parent id using datalog pull syntax instead of being returned directly. This helps Pathom match results but also means we need to reach inside each returned item and set pagination values directly."
   [{:keys [lookup] :as params} e]
-  (update e lookup #(into [] (pagination params) %)))
+  (update e lookup #(into [] (-> params :pagination pagination) %)))
 
 (defn lookup-pipeline
   [params]
@@ -94,38 +107,35 @@
              :limit 10
              :args [(:db env) (map :participant/participant-id items)]})
        (mapv first)
-       (coll/restore-order2 items :participant/participant-id)))
+       (coll/restore-order2 items :participant/participant-id))
 
-(pco/defresolver list-participant-specimens [env items]
-  {::pco/input [:participant/participant-id]
-   ::pco/output [{:participant/specimens [:specimen/specimen-id]}]
-   ::pco/batch? true}
-  (let [params (get-params :participant/specimens env)]
-    (->> (d/q {:query '{:find [(pull ?e [:participant/participant-id {:participant/specimens [:specimen/specimen-id]}])]
-                        :in [$ [?participant-id ...]]
-                        :where [[?e :participant/participant-id ?participant-id]]}
-               :args [(:db env) (map :participant/participant-id items)]})
-         (sequence (lookup-pipeline params))
-         vec
-         (coll/restore-order2 items :participant/participant-id))))
+  (pco/defresolver list-participant-specimens [env items]
+    {::pco/input [:participant/participant-id]
+     ::pco/output [{:participant/specimens [:specimen/specimen-id]}]
+     ::pco/batch? true}
+    (let [params (get-lookup-params :participant/specimens env)]
+      (->> (d/q {:query '{:find [(pull ?e [:participant/participant-id {:participant/specimens [:specimen/specimen-id]}])]
+                          :in [$ [?participant-id ...]]
+                          :where [[?e :participant/participant-id ?participant-id]]}
+                 :args [(:db env) (map :participant/participant-id items)]})
+           (sequence (lookup-pipeline params))
+           vec
+           (coll/restore-order2 items :participant/participant-id))))
 
-
-(pco/defresolver pageinfo-participant-specimens [env items]
-  {::pco/input [:participant/participant-id]
-   ::pco/output [{:participant/specimens-pageinfo [:total :limit :offset]}]
-   ::pco/batch? true}
-  (let [params (get-params :participant/specimens env)]
-    (->> (d/q {:query '{:find [?participant-id (count ?s)]
-                        :in [$ [?participant-id ...]]
-                        :where [[?e :participant/participant-id ?participant-id]
-                                [?e :participant/specimens ?s]]}
-               :args [(:db env) (map :participant/participant-id items)]})
-         (map (fn [[id total]] {:participant/participant-id id
-                                :participant/specimens-pageinfo (assoc (get-pagination-params params) :total total)}))
-         vec
-         (coll/restore-order2 items :participant/participant-id))))
-
-
+  (pco/defresolver pageinfo-participant-specimens [env items]
+    {::pco/input [:participant/participant-id]
+     ::pco/output [{:participant/specimens-pageinfo [:total :limit :offset]}]
+     ::pco/batch? true}
+    (let [params (get-lookup-params :participant/specimens env)]
+      (->> (d/q {:query '{:find [?participant-id (count ?s)]
+                          :in [$ [?participant-id ...]]
+                          :where [[?e :participant/participant-id ?participant-id]
+                                  [?e :participant/specimens ?s]]}
+                 :args [(:db env) (map :participant/participant-id items)]})
+           (map (fn [[id total]] {:participant/participant-id id
+                                  :participant/specimens-pageinfo (assoc (:pagination params) :total total)}))
+           vec
+           (coll/restore-order2 items :participant/participant-id)))))
 
 (pco/defresolver get-specimen [env items]
   {::pco/input [:specimen/specimen-id]

@@ -11,15 +11,101 @@
             [integrant.core :as ig]
             [malli.core :as m]
             [malli.transform :as mt]
-            [malli.error :as me]))
+            [malli.error :as me]
+            [clojure.spec.alpha :as s]
+            [clojure.spec.gen.alpha :as g]
+            [exoscale.coax :as c]
+            [exoscale.coax.coercer :as cc]))
 
+
+(def clamp-to-range-transformer
+  {:name :clamp-to-range
+   :compile (fn
+              [schema _]
+              (let [vmin (:min (m/properties schema) java.lang.Integer/MIN_VALUE)
+                    vmax (:max (m/properties schema) java.lang.Integer/MAX_VALUE)]
+                (fn [v] (-> v (max vmin) (min vmax)))))})
 
 (def LIMIT_MAX 100)
-(def ?limit [:int {:min 0 :max LIMIT_MAX :default 10}])
-(def ?offset [:int {:min 0 :default 0}])
+(def ?limit [:int {:min 0 :max LIMIT_MAX :default 10 :decode/clamp-to-range clamp-to-range-transformer}])
+(def ?offset [:int {:min 0 :default 0 :decode/clamp-to-range clamp-to-range-transformer}])
 (def ?pagination [:map {:closed true}
                   [:limit ?limit]
                   [:offset ?offset]])
+(defn coercer-with-default [coercer default x]
+  (let [v (coercer x nil)]
+    (if (= v :exoscale.coax/invalid)
+      default
+      v)))
+(defn clamp
+  [opts x]
+  (let [vmin (:min opts java.lang.Integer/MIN_VALUE)
+        vmax (:max opts java.lang.Integer/MAX_VALUE)]
+    (-> x (max vmin) (min vmax))))
+
+(s/def ::limit (s/int-in 0 101))
+(c/def ::limit (fn [x _] (->> x
+                              (coercer-with-default cc/to-long 10)
+                              (clamp {:min 0 :max 100})
+                              (.longValue))))
+
+(s/def ::offset nat-int?)
+(c/def ::offset (fn [x _] (->> x
+                               (coercer-with-default cc/to-long 0)
+                               (clamp {:min 0})
+                               (.longValue))))
+(s/def ::pagination (s/keys :req-un [::limit ::offset]))
+(s/def ::params (s/keys :opt-un [::limit ::offset]))
+
+
+
+(comment
+  (-> (s/keys :opt-un [::limit ::offset])
+      (s/with-gen #(s/gen (s/every-kv
+                           (s/or :string string? :keyword keyword? :limit #{:limit} :offset #{:offset})
+                           (s/or :string string? :int int?))))
+      s/gen
+      g/generate)
+  (m/decode ?pagination
+            {:limit "122"}
+            (mt/transformer
+             mt/strip-extra-keys-transformer
+             mt/default-value-transformer
+            ;;  mt/string-transformer
+             clamp-to-range-transformer))
+
+
+  (s/conform ::limit -11)
+  (s/explain-data ::limit "-11")
+  (c/coerce ::limit nil)
+  (c/coerce ::limit "11")
+  (c/coerce ::limit "-11")
+  (c/coerce ::limit "0")
+  (c/coerce ::limit "50")
+  (c/coerce ::limit "550")
+  (s/conform ::offset -11)
+  (c/coerce ::offset "-11")
+  (c/coerce ::offset [-11])
+  (s/explain-data ::pagination {::limit 122 ::offset [111]})
+  (c/coerce ::pagination {:limit "-"}))
+
+(s/fdef coax-pagination-params
+  :args (s/cat :params (s/every-kv
+                        #{:limit :offset :extra-key}
+                        any?))
+  :ret  #(s/valid? ::pagination %))
+(defn coax-pagination-params [{:keys [limit offset]}] (c/coerce ::pagination {:limit limit :offset offset}))
+
+(s/fdef decode-pagination-params
+  :args (s/cat :params (s/every-kv
+                        #{:limit :offset :extra-key}
+                        (s/or :string string? :int int?)))
+  :ret  #(s/valid? ::pagination %))
+(defn decode-pagination-params [params] (m/decode ?pagination params (mt/transformer
+                                                                      mt/strip-extra-keys-transformer
+                                                                      mt/default-value-transformer
+                                                                      mt/string-transformer
+                                                                      clamp-to-range-transformer)))
 
 (defn corce-pagination-params [params]
   (let [ps  (m/decode ?pagination params (mt/transformer
@@ -107,35 +193,34 @@
              :limit 10
              :args [(:db env) (map :participant/participant-id items)]})
        (mapv first)
-       (coll/restore-order2 items :participant/participant-id))
+       (coll/restore-order2 items :participant/participant-id)))
+(pco/defresolver list-participant-specimens [env items]
+  {::pco/input [:participant/participant-id]
+   ::pco/output [{:participant/specimens [:specimen/specimen-id]}]
+   ::pco/batch? true}
+  (let [params (get-lookup-params :participant/specimens env)]
+    (->> (d/q {:query '{:find [(pull ?e [:participant/participant-id {:participant/specimens [:specimen/specimen-id]}])]
+                        :in [$ [?participant-id ...]]
+                        :where [[?e :participant/participant-id ?participant-id]]}
+               :args [(:db env) (map :participant/participant-id items)]})
+         (sequence (lookup-pipeline params))
+         vec
+         (coll/restore-order2 items :participant/participant-id))))
 
-  (pco/defresolver list-participant-specimens [env items]
-    {::pco/input [:participant/participant-id]
-     ::pco/output [{:participant/specimens [:specimen/specimen-id]}]
-     ::pco/batch? true}
-    (let [params (get-lookup-params :participant/specimens env)]
-      (->> (d/q {:query '{:find [(pull ?e [:participant/participant-id {:participant/specimens [:specimen/specimen-id]}])]
-                          :in [$ [?participant-id ...]]
-                          :where [[?e :participant/participant-id ?participant-id]]}
-                 :args [(:db env) (map :participant/participant-id items)]})
-           (sequence (lookup-pipeline params))
-           vec
-           (coll/restore-order2 items :participant/participant-id))))
-
-  (pco/defresolver pageinfo-participant-specimens [env items]
-    {::pco/input [:participant/participant-id]
-     ::pco/output [{:participant/specimens-pageinfo [:total :limit :offset]}]
-     ::pco/batch? true}
-    (let [params (get-lookup-params :participant/specimens env)]
-      (->> (d/q {:query '{:find [?participant-id (count ?s)]
-                          :in [$ [?participant-id ...]]
-                          :where [[?e :participant/participant-id ?participant-id]
-                                  [?e :participant/specimens ?s]]}
-                 :args [(:db env) (map :participant/participant-id items)]})
-           (map (fn [[id total]] {:participant/participant-id id
-                                  :participant/specimens-pageinfo (assoc (:pagination params) :total total)}))
-           vec
-           (coll/restore-order2 items :participant/participant-id)))))
+(pco/defresolver pageinfo-participant-specimens [env items]
+  {::pco/input [:participant/participant-id]
+   ::pco/output [{:participant/specimens-pageinfo [:total :limit :offset]}]
+   ::pco/batch? true}
+  (let [params (get-lookup-params :participant/specimens env)]
+    (->> (d/q {:query '{:find [?participant-id (count ?s)]
+                        :in [$ [?participant-id ...]]
+                        :where [[?e :participant/participant-id ?participant-id]
+                                [?e :participant/specimens ?s]]}
+               :args [(:db env) (map :participant/participant-id items)]})
+         (map (fn [[id total]] {:participant/participant-id id
+                                :participant/specimens-pageinfo (assoc (:pagination params) :total total)}))
+         vec
+         (coll/restore-order2 items :participant/participant-id))))
 
 (pco/defresolver get-specimen [env items]
   {::pco/input [:specimen/specimen-id]

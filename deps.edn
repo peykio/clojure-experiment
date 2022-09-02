@@ -16,6 +16,7 @@
         metosin/muuntaja {:mvn/version "0.6.8"}
         org.clj-commons/digest {:mvn/version "1.4.100"}
         metosin/malli {:mvn/version "0.8.9"}
+        exoscale/coax {:mvn/version "1.0.0-alpha21"}
 
         ;; pathom
         com.wsscode/pathom3 {:mvn/version "2022.07.08-alpha"}

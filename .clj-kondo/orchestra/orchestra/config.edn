@@ -1,0 +1,1 @@
+{:lint-as {orchestra.core/defn-spec clj-kondo.lint-as/def-catch-all}}

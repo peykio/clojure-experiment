@@ -1,0 +1,10 @@
+#kaocha/v1
+ {:tests [{:type :kaocha.type/spec.test.check
+           :id   :generative-fdef-checks}]
+  :plugins [:orchestra
+            :preloads
+            :kaocha.plugin/profiling]
+  :reporter [kaocha.report/documentation]
+  :color? true
+  :kaocha.plugin.profiling/count 3
+  :kaocha.plugin.profiling/profiling? true}

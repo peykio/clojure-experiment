@@ -1,5 +1,7 @@
 (ns clojure-experiment.pedestal
-  (:require [cognitect.transit :as t]
+  (:require [clj-http.lite.client :as http]
+            [clojure-experiment.env :as env]
+            [cognitect.transit :as t]
             [com.wsscode.pathom3.connect.operation.transit :as pcot]
             [com.wsscode.pathom3.interface.eql :as p.eql]
             [integrant.core :as ig]
@@ -47,12 +49,68 @@
                   request-fn (get-in context [:request ::request-fn])]
               (assoc context :response (ok (request-fn query)))))})
 
+(def workos-organizations
+  {:name :workos-organizations
+   :enter (fn [context]
+            (let [res (http/get "https://api.workos.com/organizations"
+                                {:headers {"Authorization" (str "Bearer " (get-in env/envs [:authn :workos-client-secret]))}})]
+              (assoc context :response (ok (m/decode "application/json" (:body res))))))})
+#trace
+ (def workos-passwordless
+   {:name :workos-passwordless
+    :enter (fn [context]
+             (let [params (get-in context [:request :body-params])
+                   res  (http/post "https://api.workos.com/passwordless/sessions"
+                                   {:throw-exceptions false
+                                    :body (m/encode "application/json" {:type "MagicLink"
+                                                                        :email (:email params)})
+                                    :headers {"content-type" "application/json"
+                                              "Authorization" (str "Bearer " (get-in env/envs [:authn :workos-client-secret]))}})]
+
+               (if (not= (:status res) 200)
+                 (let [body (->> res :body (m/decode "application/json"))]
+                   (http/post (str "https://api.workos.com/passwordless/sessions/" (:id body) "/send")
+                              {:throw-exceptions false
+                               :headers {"Authorization" (str "Bearer " (get-in env/envs [:authn :workos-client-secret]))}})
+                   (assoc context :response {:status (:status res) :body body}))
+                 (assoc context :response res))))})
+
+(def workos-sso-authorize
+  {:name :workos-sso-authorize
+   :enter (fn [context]
+            (let [res (http/get "https://api.workos.com/sso/authorize"
+                                {:follow-redirects false
+                                 :query-params {:response_type "code"
+                                                :client_id (get-in env/envs [:authn :workos-client-id])
+                                                :redirect_uri "https://xpznriu6ek.execute-api.us-east-1.amazonaws.com/api/workos/sso/token"
+                                                :provider "GoogleOAuth"}
+                                 :headers {"Authorization" (str "Bearer " (get-in env/envs [:authn :workos-client-secret]))}})]
+              (assoc context :response res)))})
+
+(def workos-sso-token
+  {:name :workos-sso-token
+   :enter (fn [context]
+            (let [query (get-in context [:request :query-params])
+                  res  (http/post "https://api.workos.com/sso/token"
+                                  {:query-params {:grant_type "authorization_code"
+                                                  :client_id (get-in env/envs [:authn :workos-client-id])
+                                                  :client_secret (get-in env/envs [:authn :workos-client-secret])
+                                                  :code (:code query)}})]
+              (assoc context :response {:status 302 :body "Found. Redirecting to <a href=\"http://localhost:3000/done\"/>" :headers {"Location" (str "http://localhost:3000/done?" (->> res :body (m/decode "application/json") :profile :first_name))}})))})
 
 (defn routes [{:keys [pathom-env]}]
   (route/expand-routes
-   #{["/graph" :post [(muuntaja/format-interceptor (m/create pathom-format-interceptor-defaults))
-                      (pathom-env-interceptor pathom-env)
-                      graph] :route-name :graph]}))
+   #{["/api/graph" :post [(muuntaja/format-interceptor (m/create pathom-format-interceptor-defaults))
+                          (pathom-env-interceptor pathom-env)
+                          graph] :route-name :graph]
+     ["/api/workos/organizations" :get [(muuntaja/format-interceptor)
+                                        workos-organizations] :route-name :workos-organizations]
+     ["/api/workos/sso/authorize" :get [(muuntaja/format-interceptor)
+                                        workos-sso-authorize] :route-name :workos-sso-authorize]
+     ["/api/workos/sso/token" :get [(muuntaja/format-interceptor)
+                                    workos-sso-token] :route-name :workos-sso-token]
+     ["/api/workos/passwordless" :post [(muuntaja/format-interceptor)
+                                        workos-passwordless] :route-name :workos-passwordless]}))
 
 (defmethod ig/init-key ::routes
   [_ config]

@@ -9,6 +9,7 @@
         integrant/integrant {:mvn/version "0.8.0"}
         com.datomic/ion {:mvn/version "1.0.59"}
         metosin/muuntaja {:mvn/version "0.6.8"}
+        org.clj-commons/clj-http-lite {:mvn/version "0.4.392"}
 
         ;; spec
         exoscale/coax {:mvn/version "1.0.0-alpha21"}

@@ -1,0 +1,6 @@
+{
+  "calva.jackInEnv": {
+    "DATOMIC_APP_INFO_MAP": "{ :app-name \"zaal\" }",
+    "DATOMIC_ENV_MAP": "{ :env :prod }"
+  }
+}

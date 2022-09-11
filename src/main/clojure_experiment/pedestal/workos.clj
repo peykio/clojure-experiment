@@ -37,7 +37,7 @@
                                 {:follow-redirects false
                                  :query-params {:response_type "code"
                                                 :client_id (get-in context [:io.pedestal.ions/params :WORKOS_CLIENT_ID])
-                                                :redirect_uri "https://xpznriu6ek.execute-api.us-east-1.amazonaws.com/api/workos/sso/token"
+                                                :redirect_uri "https://xpznriu6ek.execute-api.us-east-1.amazonaws.com/workos/sso/token"
                                                 :provider "GoogleOAuth"}
                                  :headers {"Authorization" (str "Bearer " (get-in context [:io.pedestal.ions/params :WORKOS_CLIENT_SECRET]))}})]
               (assoc context :response res)))})
@@ -54,23 +54,10 @@
               (assoc context :response {:status 302 :body "Found. Redirecting to <a href=\"https://xpznriu6ek.execute-api.us-east-1.amazonaws.com/done\"/>" :headers {"Location" (str "https://xpznriu6ek.execute-api.us-east-1.amazonaws.com/done?" (->> res :body (m/decode "application/json") :profile :first_name))}})))})
 
 (def routes
-  #{["/api/workos/organizations" :get
-     [(muuntaja/format-interceptor)
-      (provider/datomic-params-interceptor)
-      workos-organizations]
-     :route-name ::workos-organizations]
-    ["/api/workos/sso/authorize" :get
-     [(muuntaja/format-interceptor)
-      (provider/datomic-params-interceptor)
-      workos-sso-authorize]
-     :route-name ::workos-sso-authorize]
-    ["/api/workos/sso/token" :get
-     [(muuntaja/format-interceptor)
-      (provider/datomic-params-interceptor)
-      workos-sso-token]
-     :route-name ::workos-sso-token]
-    ["/api/workos/passwordless" :post
-     [(muuntaja/format-interceptor)
-      (provider/datomic-params-interceptor)
-      workos-passwordless]
-     :route-name ::workos-passwordless]})
+  ["/workos"
+   ^:interceptors  [(muuntaja/format-interceptor)
+                    (provider/datomic-params-interceptor)]
+   ["/organizations" {:get `workos-organizations}]
+   ["/sso/authorize" {:get `workos-sso-authorize}]
+   ["/sso/token" {:get `workos-sso-token}]
+   ["/sso/passwordless" {:post `workos-passwordless}]])

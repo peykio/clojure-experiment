@@ -6,7 +6,6 @@
             [muuntaja.interceptor :as muuntaja]))
 
 
-
 (def muuntaja-pathom-default-options
   (->
    m/default-options
@@ -29,16 +28,15 @@
      :enter (fn [context]
               (update context :request assoc ::request-fn request))}))
 
-(def graph
-  {:name ::graph
+(def pathom-interceptor
+  {:name ::pathom-interceptor
    :enter (fn [context]
             (let [query (get-in context [:request :body-params])
                   request-fn (get-in context [:request ::request-fn])]
               (assoc context :response {:status 200 :body (request-fn query)})))})
 
 (defn routes [{:keys [pathom-env]}]
-  #{["/graph" :post
-     [(muuntaja/format-interceptor (m/create muuntaja-pathom-default-options))
-      (pathom-env-interceptor pathom-env)
-      graph]
-     :route-name ::graph]})
+  ["/graph"
+   ^:interceptors [(muuntaja/format-interceptor (m/create muuntaja-pathom-default-options))
+                   (pathom-env-interceptor pathom-env)]
+   {:post `pathom-interceptor}])

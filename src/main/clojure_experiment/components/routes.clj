@@ -6,9 +6,8 @@
 
 
 (defn routes [config]
-  (route/expand-routes
-   [[(pathom/routes config)
-     workos/routes]]))
+  [[(pathom/routes config)
+    workos/routes]])
 
 (defmethod ig/init-key ::routes
   [_ config]
@@ -16,5 +15,5 @@
 
 (comment
   ((route/url-for-routes
-    (routes {:pathom-env {}}))
+    (route/expand-routes (routes {:pathom-env {}})))
    ::workos/workos-sso-token))

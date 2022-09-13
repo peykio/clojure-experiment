@@ -28,7 +28,7 @@
      :enter (fn [context]
               (update context :request assoc ::request-fn request))}))
 
-(def pathom-interceptor
+(def pathom
   {:name ::pathom-interceptor
    :enter (fn [context]
             (let [query (get-in context [:request :body-params])
@@ -39,4 +39,4 @@
   ["/graph"
    ^:interceptors [(muuntaja/format-interceptor (m/create muuntaja-pathom-default-options))
                    (pathom-env-interceptor pathom-env)]
-   {:post `pathom-interceptor}])
+   {:post `pathom}])

@@ -8,7 +8,6 @@
             [com.wsscode.pathom3.plugin :as p.plugin]
             [com.wsscode.misc.coll :as coll]
             [datomic.client.api :as d]
-            [integrant.core :as ig]
             [clojure.spec.alpha :as s]
             [exoscale.coax :as c]
             [exoscale.coax.coercer :as cc]))

@@ -2,7 +2,7 @@
   (:require [clojure-experiment.components.pedestal :as pedestal]
             [integrant.core :as ig]))
 
-(def system-map {::pedestal/ion-server {:service-map {}}})
+(def system-map {::pedestal/ion-server {}})
 
 (def system
   (delay

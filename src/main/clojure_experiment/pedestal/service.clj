@@ -1,4 +1,4 @@
-(ns clojure-experiment.pedestal.routes
+(ns clojure-experiment.pedestal.service
   (:require [clojure-experiment.pedestal.pathom :as pathom]
             [clojure-experiment.pedestal.workos :as workos]
             [io.pedestal.http.route :as route]))

@@ -1,7 +1,9 @@
 (ns clojure-experiment.pedestal.pathom
-  (:require [cognitect.transit :as t]
+  (:require [clojure-experiment.pedestal.datomic :as datomic]
+            [cognitect.transit :as t]
             [com.wsscode.pathom3.connect.operation.transit :as pcot]
             [com.wsscode.pathom3.interface.eql :as p.eql]
+            [io.pedestal.ions :as provider]
             [muuntaja.core :as m]
             [muuntaja.interceptor :as muuntaja]))
 
@@ -38,5 +40,10 @@
 (defn routes [{:keys [pathom-env]}]
   ["/graph"
    ^:interceptors [(muuntaja/format-interceptor (m/create muuntaja-pathom-default-options))
+                   (provider/datomic-params-interceptor)
+                   datomic/datomic-params-interceptor
+                   datomic/datomic-client-interceptor
+                   datomic/datomic-conn-interceptor
+                   datomic/datomic-db-interceptor
                    (pathom-env-interceptor pathom-env)]
    {:post `pathom}])

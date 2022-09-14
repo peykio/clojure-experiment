@@ -4,7 +4,6 @@
             [integrant.core :as ig]
             [io.pedestal.http.route :as route]))
 
-
 (defn routes [config]
   [[(pathom/routes config)
     workos/routes]])

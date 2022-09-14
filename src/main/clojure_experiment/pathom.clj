@@ -213,15 +213,10 @@
                list-specimen-files
                get-file])
 
-(defn env [{:keys [conn]}]
+(defn env [{:keys [db]}]
   ; persistent plan cache
   (-> {pcp/with-plan-cache plan-cache*}
       (pci/register registry)
-      (p.plugin/register [(pbip/env-wrap-plugin #(assoc % :db (d/db conn)))])
+      (p.plugin/register [(pbip/env-wrap-plugin #(assoc % :db db))])
       (p.connector/connect-env {::pvc/parser-id `env
                                 ::p.connector/async? false})))
-
-(defmethod ig/init-key ::env
-  [_ {:keys [datomic]}]
-  (println "Pathom Env")
-  (env datomic))

@@ -1,19 +1,21 @@
 (ns clojure-experiment.components.pedestal
-  (:require [integrant.core :as ig]
-            [io.pedestal.ions :as ions]
-            [io.pedestal.http :as http]))
+  (:require [clojure-experiment.pedestal.routes :refer [routes]]
+            [integrant.core :as ig]
+            [io.pedestal.http :as http]
+            [io.pedestal.ions :as ions]))
 
-(defmethod ig/init-key ::ion-server [_ {:keys [service-map]}]
+(defmethod ig/init-key ::ion-server []
   (-> {:env :prod
+       ::http/routes routes
        ::http/resource-path "/public"
        ::http/chain-provider ions/ion-provider}
-      (merge service-map)
       http/default-interceptors
       http/create-provider))
 
 (defmethod ig/init-key ::jetty-server [_ {:keys [service-map]}]
   (print "Starting local Pedestal Jetty server...")
   (let [server (-> {:env :dev
+                    ::http/routes routes
                     ::http/resource-path "/public"
                     ::http/type :jetty
                     ::http/join? false

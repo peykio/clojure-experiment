@@ -1,2 +1,1 @@
-{:clojure-experiment.components.pedestal/jetty-server {:service-map {:io.pedestal.http/routes #ig/ref :clojure-experiment.components.routes/routes
-                                                                     :io.pedestal.http/port 3000}}}
+{:clojure-experiment.components.pedestal/jetty-server {:service-map {:io.pedestal.http/port 3000}}}

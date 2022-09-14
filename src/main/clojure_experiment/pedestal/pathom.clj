@@ -1,5 +1,6 @@
 (ns clojure-experiment.pedestal.pathom
   (:require [clojure-experiment.pedestal.datomic :as datomic]
+            [clojure-experiment.pathom :as pathom]
             [cognitect.transit :as t]
             [com.wsscode.pathom3.connect.operation.transit :as pcot]
             [com.wsscode.pathom3.interface.eql :as p.eql]
@@ -20,15 +21,13 @@
     {:handlers  pcot/write-handlers
      :transform t/write-meta})))
 
-(defn pathom-env-interceptor [request-or-env]
-  (let [request (cond
-                  (fn? request-or-env) request-or-env
-                  (map? request-or-env) (p.eql/boundary-interface request-or-env)
-                  :else
-                  (throw (ex-info "Invalid input to start server, must send an env map or a boundary interface fn" {})))]
-    {:name  ::pathom-env-interceptor
-     :enter (fn [context]
-              (update context :request assoc ::request-fn request))}))
+(def pathom-env-interceptor
+  {:name  ::pathom-env-interceptor
+   :enter (fn [context]
+            (update context
+                    :request
+                    assoc
+                    ::request-fn (p.eql/boundary-interface (pathom/env {:db (get context ::datomic/db)}))))})
 
 (def pathom
   {:name ::pathom-interceptor
@@ -37,7 +36,7 @@
                   request-fn (get-in context [:request ::request-fn])]
               (assoc context :response {:status 200 :body (request-fn query)})))})
 
-(defn routes [{:keys [pathom-env]}]
+(def routes
   ["/graph"
    ^:interceptors [(muuntaja/format-interceptor (m/create muuntaja-pathom-default-options))
                    (provider/datomic-params-interceptor)
@@ -45,5 +44,5 @@
                    datomic/datomic-client-interceptor
                    datomic/datomic-conn-interceptor
                    datomic/datomic-db-interceptor
-                   (pathom-env-interceptor pathom-env)]
+                   pathom-env-interceptor]
    {:post `pathom}])

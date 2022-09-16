@@ -41,7 +41,13 @@
 
  :aliases {:ion-dev {:deps {com.datomic/ion-dev {:mvn/version "1.0.306"}}
                      :main-opts ["-m" "datomic.ion.dev"]}
-
+           ;; https://docs.datomic.com/cloud/ions/ions-reference.html#jvm-settings
+           :ion/jvm {:jvm-opts ["-XX:+UseG1GC"
+                                "-XX:MaxGCPauseMillis=50"
+                                "-Dclojure.spec.skip-macros=true"
+                                ; t3.small
+                                "-Xmx1189m"
+                                "-Xss512k"]}
            :dev {:extra-paths ["src/dev"]
                  :extra-deps {com.datomic/dev-local {:mvn/version "0.9.235"}
                               com.datomic/client-cloud {:mvn/version "1.0.120"}

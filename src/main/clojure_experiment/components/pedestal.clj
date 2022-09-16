@@ -19,10 +19,10 @@
                     ::http/resource-path "/public"
                     ::http/type :jetty
                     ::http/join? false
-                           ;; all origins are allowed in dev mode
+                    ;; all origins are allowed in dev mode
                     ::http/dev-allowed-origins {:creds true :allowed-origins (constantly true)}
-                           ;; Content Security Policy (CSP) is mostly turned off in dev mode
-                    ::http/secure-headers  {:content-security-policy-settings {:object-src "'none'"}}}
+                    ;; Content Security Policy (CSP) is mostly turned off in dev mode
+                    ::http/secure-headers {:content-security-policy-settings {:object-src "'none'"}}}
                    (merge service-map)
                    http/default-interceptors
                    http/dev-interceptors
